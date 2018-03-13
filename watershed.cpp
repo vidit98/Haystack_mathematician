@@ -2,18 +2,23 @@
 #include "opencv2/imgproc/imgproc.hpp"
 #include "opencv2/core/core.hpp"
 #include <cstdio>
-#include <iostream>
+#include <iostream>  
 #include <set>
 #include "Transform.cpp"
+#include "bg_subtract.cpp"
 
 using namespace cv;
 using namespace std;
 
-int alpha = 2 , beta = 155 , c = 7 , s = 1 , s1 = 18;
+int alpha = 2 , beta = 155 , c = 7 , s = 1 , s1 = 18, cou=0,cc=0;
+vector<Mat> segm;
+vector<Point > segp;
+vector<vector<Point> > seg_contour;
+Mat src,finalimg,ptr;
 
 void sharp_image(Mat img, Mat& output)
 {
-    // do the laplacian filtering as it is
+    // do the laplacianfiltering as it is
     // well we need to convert everything in something more deeper then CV_8U
     // because the kernel hsas some negative values,
     // and we can expect in general to have a Laplacian image with negative values
@@ -66,6 +71,7 @@ void get_markers(Mat img, Mat& output, int s1, int c, int alpha, int beta, int s
     adaptiveThreshold(bw,  bw2, 255, ADAPTIVE_THRESH_GAUSSIAN_C, CV_THRESH_BINARY_INV, 2*s1 + 1, c);
     imshow("Binary Image", bw2);
     imwrite("a1.jpg" , bw2);
+
     // Perform the distance transform algorithm
     Mat dist(img.rows, img.cols, CV_8UC1,Scalar(0));
     //distanceTransform(bw2,dist, CV_DIST_L2, 5);
@@ -112,21 +118,14 @@ void get_markers(Mat img, Mat& output, int s1, int c, int alpha, int beta, int s
    
 }
 
-void _watershed(Mat src, Mat markers, Mat& output, int size, set<int>& index_arr)
+void _watershed(Mat src, Mat markers, Mat& output, int size, set<int>& index_arr, vector<Vec3b> colors)
 {
     watershed(src, markers);
     Mat mark = Mat::zeros(markers.size(), CV_8UC1);
     markers.convertTo(mark, CV_8UC1);
     bitwise_not(mark, mark);
    
-    vector<Vec3b> colors;
-    for (size_t i = 0; i < size; i++)
-    {
-        int b = 13 + 2*i;// theRNG().uniform(0, 255);
-        int g =  13 + 3*i;//theRNG().uniform(0, 255);
-        int r =  13 + 4*i;//theRNG().uniform(0, 255);
-        colors.push_back(Vec3b((uchar)b, (uchar)g, (uchar)r));
-    }
+    
     // Create the result image
     Mat dst = Mat::zeros(markers.size(), CV_8UC3);
    
@@ -170,20 +169,28 @@ void get_small_segments(Mat dst, vector<Vec3b> colors,  set<int> index_arr, vect
         Scalar color( rand()&255, rand()&255, rand()&255 );
         int idx = *it;
        
-        printf("%d %d\n", idx);
+       // printf("%d %d\n", idx);
         inRange(dst, Scalar(colors[idx][0] ,colors[idx][1], colors[idx][2]), Scalar(colors[idx][0] + 2,colors[idx][1] + 2, colors[idx][2] + 2), bw3);
 
         Mat kernel1 = Mat::ones(3, 3, CV_8UC1);
         dilate(bw3, bw3, kernel1);
         border(bw3);
+
         // imshow("edge", bw3);      
         // imshow("edge1", bw3);
         imwrite("edge1.jpg", bw3);
         findContours(bw3, contours_tmp, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
-        contours.push_back(contours_tmp[0]);
+        //cout<<"b\n";
         drawContours(output, contours_tmp, 0,color, -1);
+       // imwrite("output.jpg",output);
+        if(!contours_tmp.empty())
+        {
+        //cout<<"c\n";
+        contours.push_back(contours_tmp[0]);
+        //cout<<"d\n";
+        }
         //imshow("dst", output);
-        
+       
         
    
 
@@ -191,105 +198,214 @@ void get_small_segments(Mat dst, vector<Vec3b> colors,  set<int> index_arr, vect
     }
 }
 
+void process_small(Mat dst, vector<Vec3b> colors,  set<int> index_arr, int area)
+{
+    //cout<<"hi\n";
+     imwrite("dst.jpg", dst);
+    Mat src_copy = dst.clone();
+    //vector <Point > cont;
+   // cont=seg_contour[0];
+ imwrite("srccopy.jpg", src_copy);
+    
+    if(area>400)
+    {
+       // cout<<cou<<endl;
+    vector<vector <Point> > contours;
+   
+    get_small_segments(dst, colors, index_arr, contours);
+    //cout<<"a\n";
+        if(contours.size()>1)
+        {
+            for (int i=0; i < contours.size(); ++i)
+            {
+                //cout<<"b\n";
+                if(!cou)
+                {
+                   
+                    if(contourArea(contours[i]) > 400 )
+                    {
+                        cout<<"a1\n";
+                        seg_contour.push_back(contours[i]);
+                        Mat markers(dst.rows, dst.cols, CV_8UC1, Scalar(0));
+                        printf("%s %f %d \n","Area:", contourArea(contours[i]),cou );
+                        Rect box =  boundingRect(contours[i]);
+                        segp.push_back(box.tl());
+                        Mat seg = src(box);
+                        //Mat seg1 = ptr(box);
+                        segm.push_back(seg);
+                        //imwrite("part1.jpg",seg1);
+                        rectangle( src_copy, box.tl(), box.br(), Scalar(0,0,255), 1, 8, 0 );
+                        imshow("argva", seg);
+                        imshow("aqw", src_copy);
 
+                        waitKey(0);
+            
+                    } 
+                    else
+                    {
+                        //cc++;
+                       // cout<<"A\n";
+                        int sumi=0,sumj=0;
+                        for(int j=0;j<contours[i].size();j++)
+                        {
+                            sumi+=contours[i][j].y;
+                            sumj+=contours[i][j].x;
+                        }
+                        sumi/=contours[i].size();
+                        //sumi+=segp[0].y;
+                        sumj/=contours[i].size();
+                        //sumj+=segp[0].x;
+                       // drawContours(finalimg, contours, i,Scalar(colors[i][0],colors[i][1],colors[i][2]), -1);
+                         imwrite("finalimg.jpg",finalimg);
+       // cout<<cc<<endl;
+                         //if((int)(pointPolygonTest(seg_contour[0], Point(sumj,sumi), false))<0)
+                            circle(finalimg, Point(sumj,sumi), 3, CV_RGB(255,0,0), -1);
+                    }  
+                }
 
+                else
+                {
+                    bool ans1 = (matchShapes(contours[i],seg_contour[0],CV_CONTOURS_MATCH_I1,0) != 0);
+                    //cout<<ans1<<endl;
+                    if(contourArea(contours[i]) > 400 && ans1)
+                    {
+                        //cout<<"a2\n";
+                        seg_contour.push_back(contours[i]);
+                       Mat markers(dst.rows, dst.cols, CV_8UC1, Scalar(0));
+                        printf("%s %f %d \n","Area:", contourArea(contours[i]),cou );
+                        Rect box =  boundingRect(contours[i]);
+                        segp.push_back(Point(box.tl().x+segp[0].x,box.tl().y+segp[0].y));
+                        Mat seg = src(box);
+                        //Mat seg1 = ptr(box);
+                        segm.push_back(seg);
+                        //imwrite("part2.jpg",seg1);
+                        rectangle( src_copy, box.tl(), box.br(), Scalar(0,0,255), 1, 8, 0 );
+                        imshow("argva", seg);
+                        imshow("aqw", src_copy);
+
+                        waitKey(0);
+            
+                    } 
+                    else
+                    {
+                        //cc++;
+                       // cout<<"A\n";
+                        int sumi=0,sumj=0;
+                        for(int j=0;j<contours[i].size();j++)
+                        {
+                            sumi+=contours[i][j].y;
+                            sumj+=contours[i][j].x;
+                        }
+                        sumi/=contours[i].size();
+                        sumi+=segp[0].y;
+                        sumj/=contours[i].size();
+                        sumj+=segp[0].x;
+                        //drawContours(finalimg, contours, i,Scalar(colors[i][0],colors[i][1],colors[i][2]), -1);
+                         imwrite("finalimg.jpg",finalimg);
+                        // cout<<cc<<endl;
+                        if((int)(pointPolygonTest(seg_contour[0], Point(sumj,sumi), false))<0)
+                            circle(finalimg, Point(sumj,sumi), 3, CV_RGB(255,0,0), -1);
+                    }
+                }
+            }
+        }
+    }
+
+    /*else
+    {
+        //cc++;
+        //cout<<"A\n";
+        int sumi=0,sumj=0;
+        for(int i=0;i<seg_contour[0].size();i++)
+        {
+            sumi+=seg_contour[0][i].y;
+            sumj+=seg_contour[0][i].x;
+        }
+        sumi/=seg_contour[0].size();
+        sumj/=seg_contour[0].size();
+        //cout<<cc<<endl;
+         circle(finalimg, Point(sumj,sumi), 3, CV_RGB(255,0,0), -1);
+    }*/
+}
+
+      
 int main(int, char** argv)
 {
     // Load the image
-    Mat temp = imread(argv[1]);
-    
-    Mat src = temp.clone();
+    Mat temp = imread(argv[1]); 
+    //Mat temp(400, 400, CV_8UC3, Scalar(0,0,0));
+   // resize(temp1, temp, Size(temp.rows, temp.cols));
+    //imwrite("test5.jpg",temp);  
+     src = temp.clone();
+     ptr = temp.clone(); 
+     finalimg=temp.clone();
     // Check if everything was fine
-    if (!temp.data)
+    if (!temp.data)   
         return -1;
+ 
+    Mat yohoo; 
     
     imshow("Black Background Image", src);
     // Create a kernel that we will use for accuting/sharpening our image4
-    Mat bw,bw1,bw2;
-    Mat kernel = (Mat_<float>(3,3) <<
-            1,  1, 1,
-            1, -8, 1,
-            1,  1, 1); // an approximation of second derivative, a quite strong kernel
-
-
+    bg(yohoo,temp);
     
    /* Mat imgLaplacian;
    */
-    sharp_image(temp , src);
+    sharp_image(yohoo , src);
     imwrite("sharp.jpg", src);
-    imshow("a" , src);
+    imshow("a" , src); 
     waitKey(0);
     //Create binary image from source image
-    
-  
-    // namedWindow("Object Detection",WINDOW_AUTOSIZE);
-    // createTrackbar("alpha","Object Detection", &alpha, 50);
-    // createTrackbar("beta","Object Detection", &beta, 180);
-    // createTrackbar("gradient","Object Detection", &s, 100);
-    // createTrackbar("constant","Object Detection", &c, 180);
-    // createTrackbar("size","Object Detection", &s1, 180);
-
-    
-    Mat src_copy = temp.clone();
     vector<vector<Point> > contours;
+    Mat src_copy = temp.clone();
+    
     set<int> index_arr;
     Mat markers;
     int size;
     Mat dst;
     get_markers(src, markers, s1, c, alpha, beta, s, size, 1);
-
-    vector<Vec3b> colors;
     
+    vector<Vec3b> colors;
     for (size_t i = 0; i < size; i++)
     {
-        int b = 13 + 2*i;// theRNG().uniform(0, 255);
+        int b = 13 + 4*i;// theRNG().uniform(0, 255);
         int g =  13 + 3*i;//theRNG().uniform(0, 255);
-        int r =  13 + 4*i;//theRNG().uniform(0, 255);
+        int r =  13 + 2*i;//theRNG().uniform(0, 255);
         colors.push_back(Vec3b((uchar)b, (uchar)g, (uchar)r));
     }
 
-    _watershed(src, markers, dst, size, index_arr);
-    get_small_segments(dst, colors, index_arr, contours);
+    _watershed(src, markers, dst, size, index_arr,colors);
+    //get_small_segments(dst, colors, index_arr, contours);
+    process_small(dst,colors,index_arr,5000);
     
-    Mat dst1;
-    for (int i = 0; i < contours.size(); ++i)
+    int i = 0;
+    
+    while(!segm.empty())
     {
-        src_copy = dst.clone();
-        if(contourArea(contours[i]) > 250)
-        {
-            Mat markers(dst.rows, dst.cols, CV_8UC1, Scalar(0));
-            printf("%s %f\n","Area:", contourArea(contours[i]) );
-            Rect box =  boundingRect(contours[i]);
-            
-            /*Point p1,p2;
-            p1.x = box.tl().x - 5;
-            p1.y = box.tl().y - 5;
-            p2.x = box.br().x + 5;
-            p2.y = box.br().y + 5;
-            box.tl() = p1;
-            box.br() = p2;*/
-            Mat seg = src(box);
-            
-
-            rectangle( src_copy, box.tl(), box.br(), Scalar(0,0,255), 1, 8, 0 );
-            imshow("argva", seg);
-            imshow("aqw", src_copy);
-
-            waitKey(0);
-
-            get_markers(seg, markers, s1, c, alpha, beta, s, size, 0);
-            _watershed(seg, markers, dst1, size, index_arr);
-            
-
-        }
+        Mat dst1;
+        cou++;
+        imwrite("seg.jpg", segm[0]);
+        index_arr.clear();
+         get_markers(segm[0], markers, s1, c, alpha, beta, s, size, 0);
+         //cout<<"hi\n";
+        _watershed(segm[0], markers, dst1, size, index_arr,colors);
+        //cout<<"a\n";
+        imwrite("win.jpg",dst1);
+        waitKey(0);
+        process_small(dst1,colors,index_arr,contourArea(seg_contour[0]));
+       // cout<<"b\n";
+        //cout<<segm.size()<<endl;
+        segm.erase(segm.begin());
+        seg_contour.erase(seg_contour.begin());
+        segp.erase(segp.begin());
     }
    
 
 
-    printf("%d\n",contours.size() );
+   // printf("%d\n",contours.size() );
 
 
-    
+    imwrite("finalimg.jpg",finalimg);
     waitKey(0);
 
     return 0;

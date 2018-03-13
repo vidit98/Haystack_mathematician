@@ -218,10 +218,13 @@ static void distanceTransform_5x5( const Mat& _src, const Mat& _gray, Mat& _temp
             }
             if (tmpg[j]*scale > 256)
             {
-                printf("%s\n", "check");
-                printf("%d\n", tmpg[j]*scale);
+                d[j] = (float)((t0 * scale + 255));
             }
-            d[j] = (float)((t0 + alpha*tmpg[j])* scale);
+            else
+            {
+                d[j] = (float)((t0 + alpha*tmpg[j])* scale);
+            }
+            
         }
     }
 }
