@@ -17,7 +17,7 @@ vector<Mat> segm2;
 vector<Point > segp;
 vector<vector<Point> > seg_contour;
 Mat src,finalimg,ptr;
-Mat temp, t;
+Mat temp, t, imgg;
 
 void sharp_image(Mat img, Mat& output)
 {
@@ -64,15 +64,15 @@ void get_markers(Mat img, Mat& output, int s1, int c, int alpha, int beta, int s
     cvtColor(img, bw1, CV_BGR2GRAY);
        
     medianBlur(bw1,bw1,3);
-    imshow("q" , bw1);
+    //imshow("q" , bw1);
     imwrite("bn1.jpg",bw1);
     bilateralFilter(bw1, bw, 2*alpha + 1, beta, 50 );
     
-    imshow("Binary Image1", bw);
+    //imshow("Binary Image1", bw);
     imwrite("a.jpg" , bw);
     // threshold(bw, bw2, 40, 255, CV_THRESH_BINARY_INV| CV_THRESH_OTSU);
     adaptiveThreshold(bw,  bw2, 255, ADAPTIVE_THRESH_GAUSSIAN_C, CV_THRESH_BINARY_INV, 2*s1 + 1, c);
-    imshow("Binary Image", bw2);
+    ////imshow("Binary Image", bw2);
     imwrite("a1.jpg" , bw2);
 
     // Perform the distance transform algorithm
@@ -82,7 +82,7 @@ void get_markers(Mat img, Mat& output, int s1, int c, int alpha, int beta, int s
     //  Normalize the distance image for range = {0.0, 1.0}
     //so we can visualize and threshold it
     normalize(dist, dist, 0, 1., NORM_MINMAX);
-    imshow("Distance Transform Image", dist);
+    //imshow("Distance Transform Image", dist);
     imwrite("Distancet.jpg", dist);
     // Threshold to obtain the peaks
     // This will be the markers for the foreground objects
@@ -91,7 +91,7 @@ void get_markers(Mat img, Mat& output, int s1, int c, int alpha, int beta, int s
     Mat kernel1 = Mat::ones(3, 3, CV_8UC1);
     if(flag)
         dilate(dist, dist, kernel1);
-    imshow("Peaks", dist);
+    //imshow("Peaks", dist);
     imwrite("Peaks.jpg", dist);
    
     Mat dist_8u;
@@ -117,7 +117,7 @@ void get_markers(Mat img, Mat& output, int s1, int c, int alpha, int beta, int s
     size = contours.size();
     //Draw the background marker
     
-    imshow("Marker", src_copy);
+    //imshow("Marker", src_copy);
    
 }
 
@@ -152,7 +152,7 @@ void _watershed(Mat src, Mat markers, Mat& output, int size, set<int>& index_arr
     }
     // Visualize the final image
     output = dst;
-    imshow("Final Result", dst);
+    //imshow("Final Result", dst);
     imwrite("final.jpg", dst);
     waitKey(0);
    
@@ -241,7 +241,7 @@ void process_small(Mat dst, vector<Vec3b> colors,  set<int> index_arr, int area,
                         segm2.push_back(seg2);
                         //imwrite("part1.jpg",seg1);
                         rectangle( src_copy, box.tl(), box.br(), Scalar(0,0,255), 1, 8, 0 );
-                        imshow("argva", seg);
+                        //imshow("argva", seg);
                         imshow("aqw", src_copy);
 
                         waitKey(0);
@@ -268,6 +268,10 @@ void process_small(Mat dst, vector<Vec3b> colors,  set<int> index_arr, int area,
                         //if((int)(pointPolygonTest(seg_contour[0], Point(sumj,sumi), false))<0)
                         //circle(finalimg, Point(sumj,sumi), 3, CV_RGB(255,0,0), -1);
                         Rect r = boundingRect(Mat(contours[i]));
+                        imgg = temp.clone();
+                        rectangle( imgg,Point(r.tl().x, r.tl().y), Point(r.br().x, r.br().y), Scalar(0,0,255), 1, 8, 0 );
+                        imshow("sobel", imgg);
+                        waitKey(0);
                         Mat img_ROI = t(r);
                         cout<<"roi selected\n";
                         Mat lapc;
@@ -298,6 +302,10 @@ void process_small(Mat dst, vector<Vec3b> colors,  set<int> index_arr, int area,
                     if(contourArea(contours[i]) > app_area && ans1)
                     {
                         //cout<<"a2\n";
+                        imgg = temp.clone();
+                        rectangle( imgg,Point(segp[0].x, segp[0].y), Point(segm[0].cols+segp[0].x, segm[0].rows + segp[0].y), Scalar(0,0,255), 1, 8, 0 );
+                        imshow("sobel1", imgg);
+                        waitKey(0);
                         seg_contour.push_back(contours[i]);
                         Mat markers(dst.rows, dst.cols, CV_8UC1, Scalar(0));
                         printf("%s %f %d \n","Area:", contourArea(contours[i]),cou );
@@ -310,7 +318,7 @@ void process_small(Mat dst, vector<Vec3b> colors,  set<int> index_arr, int area,
                         segm2.push_back(seg2);
                         //imwrite("part2.jpg",seg1);
                         rectangle( src_copy, box.tl(), box.br(), Scalar(0,0,255), 1, 8, 0 );
-                        imshow("argva", seg);
+                        //imshow("argva", seg);
                         imshow("aqw", src_copy);
 
                         waitKey(0);
@@ -337,7 +345,11 @@ void process_small(Mat dst, vector<Vec3b> colors,  set<int> index_arr, int area,
                         if((int)(pointPolygonTest(seg_contour[0], Point(sumj,sumi), false))>0){
                             //circle(finalimg, Point(sumj,sumi), 3, CV_RGB(255,0,0), -1);
                             printf("less than 400\n");
+                            imgg = temp.clone();
                             Rect r = boundingRect(Mat(contours[i]));
+                            rectangle( imgg,Point(r.tl().x+segp[0].x, r.tl().y + segp[0].y), Point(r.br().x+segp[0].x, r.br().y + segp[0].y), Scalar(0,0,255), 1, 8, 0 );
+                            imshow("sobel", imgg);
+                            waitKey(0);
                             Mat img_ROI = segm2[0](r);
                             cout<<"roi selected\n";
                             cout<<img_ROI.rows<<" "<<img_ROI.cols<<endl;
@@ -391,6 +403,7 @@ int main(int, char** argv)
 {
     // Load the image
     temp = imread(argv[1]); 
+    
     cvtColor(temp, t, CV_BGR2GRAY);
     //Mat temp(400, 400, CV_8UC3, Scalar(0,0,0));
     // resize(temp1, temp, Size(temp.rows, temp.cols));
@@ -404,13 +417,13 @@ int main(int, char** argv)
  
     Mat yohoo; 
     
-    imshow("Black Background Image", src);
+    //imshow("Black Background Image", src);
     
     bg(yohoo,temp);
     
     sharp_image(yohoo , src);
     imwrite("sharp.jpg", src);
-    imshow("a" , src); 
+    //imshow("a" , src); 
     waitKey(0);
     //Create binary image from source image
     vector<vector<Point> > contours;
