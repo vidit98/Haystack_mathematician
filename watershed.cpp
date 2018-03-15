@@ -6,15 +6,18 @@
 #include <set>
 #include "Transform.cpp"
 #include "bg_subtract.cpp"
+#include "sobel.cpp"
 
 using namespace cv;
 using namespace std;
 
 int alpha = 2 , beta = 155 , c = 7 , s = 1 , s1 = 18, cou=0,cc=0;
 vector<Mat> segm;
+vector<Mat> segm2;
 vector<Point > segp;
 vector<vector<Point> > seg_contour;
 Mat src,finalimg,ptr;
+Mat temp, t;
 
 void sharp_image(Mat img, Mat& output)
 {
@@ -192,47 +195,50 @@ void get_small_segments(Mat dst, vector<Vec3b> colors,  set<int> index_arr, vect
         //imshow("dst", output);
        
         
-   
+    
 
         
     }
 }
 
-void process_small(Mat dst, vector<Vec3b> colors,  set<int> index_arr, int area)
+void process_small(Mat dst, vector<Vec3b> colors,  set<int> index_arr, int area, int app_area)
 {
-    //cout<<"hi\n";
-     imwrite("dst.jpg", dst);
+    //int radius = int(sqrt(app_area/3.14));
+    int radius = 10;
+    imwrite("dst.jpg", dst);
     Mat src_copy = dst.clone();
-    //vector <Point > cont;
-   // cont=seg_contour[0];
- imwrite("srccopy.jpg", src_copy);
+    //vector <Point > cont;      
+    // cont=seg_contour[0];
+    imwrite("srccopy.jpg", src_copy);
     
-    if(area>400)
+    if(area>app_area)
     {
        // cout<<cou<<endl;
     vector<vector <Point> > contours;
    
     get_small_segments(dst, colors, index_arr, contours);
     //cout<<"a\n";
-        if(contours.size()>1)
+        if(contours.size()>=1)
         {
             for (int i=0; i < contours.size(); ++i)
             {
                 //cout<<"b\n";
                 if(!cou)
                 {
-                   
-                    if(contourArea(contours[i]) > 400 )
+                    
+                    if(contourArea(contours[i]) > app_area )
                     {
                         cout<<"a1\n";
                         seg_contour.push_back(contours[i]);
                         Mat markers(dst.rows, dst.cols, CV_8UC1, Scalar(0));
                         printf("%s %f %d \n","Area:", contourArea(contours[i]),cou );
-                        Rect box =  boundingRect(contours[i]);
+                        Rect box = boundingRect(contours[i]);
                         segp.push_back(box.tl());
                         Mat seg = src(box);
+                        Mat seg2 = t(box);
                         //Mat seg1 = ptr(box);
                         segm.push_back(seg);
+                        segm2.push_back(seg2);
                         //imwrite("part1.jpg",seg1);
                         rectangle( src_copy, box.tl(), box.br(), Scalar(0,0,255), 1, 8, 0 );
                         imshow("argva", seg);
@@ -255,29 +261,53 @@ void process_small(Mat dst, vector<Vec3b> colors,  set<int> index_arr, int area)
                         //sumi+=segp[0].y;
                         sumj/=contours[i].size();
                         //sumj+=segp[0].x;
-                       // drawContours(finalimg, contours, i,Scalar(colors[i][0],colors[i][1],colors[i][2]), -1);
-                         imwrite("finalimg.jpg",finalimg);
-       // cout<<cc<<endl;
-                         //if((int)(pointPolygonTest(seg_contour[0], Point(sumj,sumi), false))<0)
-                            circle(finalimg, Point(sumj,sumi), 3, CV_RGB(255,0,0), -1);
-                    }  
+                        
+                        //drawContours(ddd, contours, i,Scalar(colors[i][0],colors[i][1],colors[i][2]), -1);
+                        //imwrite("finalimg1.jpg",ddd);
+                        // cout<<cc<<endl;
+                        //if((int)(pointPolygonTest(seg_contour[0], Point(sumj,sumi), false))<0)
+                        //circle(finalimg, Point(sumj,sumi), 3, CV_RGB(255,0,0), -1);
+                        Rect r = boundingRect(Mat(contours[i]));
+                        Mat img_ROI = t(r);
+                        cout<<"roi selected\n";
+                        Mat lapc;
+                        lapc = conv_to_laplace(img_ROI);
+                        cout<<"hhhhhhhhhhhh\n";
+                        imshow("lapalce", lapc);
+                        waitKey(0);
+                        vector<Point> wrt; 
+                        for(int m=0;m<contours[i].size();m++){
+                            Point pp ;
+                            pp.x = contours[i][m].x - r.tl().x;
+                            pp.y = contours[i][m].y - r.tl().y;
+                            wrt.push_back(pp); 
+                        }                 
+                        //lapc = conv_to_lapalce(lapc);
+                        vector<Point> sob_point = apply_sobel(lapc, wrt, radius);
+                        for(int k = 0;k<sob_point.size();k++){
+                            circle(finalimg, Point(r.tl().x + sob_point[i].x, r.tl().y + sob_point[i].y), 2, CV_RGB(255,0,0), -1);
+                        }
+
+                    }   
                 }
 
                 else
                 {
                     bool ans1 = (matchShapes(contours[i],seg_contour[0],CV_CONTOURS_MATCH_I1,0) != 0);
                     //cout<<ans1<<endl;
-                    if(contourArea(contours[i]) > 400 && ans1)
+                    if(contourArea(contours[i]) > app_area && ans1)
                     {
                         //cout<<"a2\n";
                         seg_contour.push_back(contours[i]);
-                       Mat markers(dst.rows, dst.cols, CV_8UC1, Scalar(0));
+                        Mat markers(dst.rows, dst.cols, CV_8UC1, Scalar(0));
                         printf("%s %f %d \n","Area:", contourArea(contours[i]),cou );
                         Rect box =  boundingRect(contours[i]);
                         segp.push_back(Point(box.tl().x+segp[0].x,box.tl().y+segp[0].y));
-                        Mat seg = src(box);
+                        Mat seg = segm[0](box);
+                        Mat seg2 = segm2[0](box);
                         //Mat seg1 = ptr(box);
                         segm.push_back(seg);
+                        segm2.push_back(seg2);
                         //imwrite("part2.jpg",seg1);
                         rectangle( src_copy, box.tl(), box.br(), Scalar(0,0,255), 1, 8, 0 );
                         imshow("argva", seg);
@@ -288,7 +318,6 @@ void process_small(Mat dst, vector<Vec3b> colors,  set<int> index_arr, int area)
                     } 
                     else
                     {
-                        //cc++;
                        // cout<<"A\n";
                         int sumi=0,sumj=0;
                         for(int j=0;j<contours[i].size();j++)
@@ -297,14 +326,43 @@ void process_small(Mat dst, vector<Vec3b> colors,  set<int> index_arr, int area)
                             sumj+=contours[i][j].x;
                         }
                         sumi/=contours[i].size();
-                        sumi+=segp[0].y;
+                        //sumi+=segp[0].y;
                         sumj/=contours[i].size();
-                        sumj+=segp[0].x;
-                        //drawContours(finalimg, contours, i,Scalar(colors[i][0],colors[i][1],colors[i][2]), -1);
-                         imwrite("finalimg.jpg",finalimg);
+                        //sumj+=segp[0].x;
+                        //Mat ddd(segm2[0].rows, segm2[0].cols, CV_8UC3, Scalar(0, 0, 0));
+                        //drawContours(ddd, contours, i,Scalar(colors[i][0],colors[i][1],colors[i][2]), -1);
+                        //imwrite("finalimg1.jpg", ddd);
+                        
                         // cout<<cc<<endl;
-                        if((int)(pointPolygonTest(seg_contour[0], Point(sumj,sumi), false))<0)
-                            circle(finalimg, Point(sumj,sumi), 3, CV_RGB(255,0,0), -1);
+                        if((int)(pointPolygonTest(seg_contour[0], Point(sumj,sumi), false))>0){
+                            //circle(finalimg, Point(sumj,sumi), 3, CV_RGB(255,0,0), -1);
+                            printf("less than 400\n");
+                            Rect r = boundingRect(Mat(contours[i]));
+                            Mat img_ROI = segm2[0](r);
+                            cout<<"roi selected\n";
+                            cout<<img_ROI.rows<<" "<<img_ROI.cols<<endl;
+                            Mat lapc;
+                            lapc = conv_to_laplace(img_ROI);  
+                            cout<<"hhhhhhhhhhhh\n";
+                            imshow("laplace", lapc);
+                            waitKey(0);
+                            //lapc = conv_to_laplace(lapc);
+                            vector<Point> wrt;
+                            for(int m=0;m<contours[i].size();m++){
+                                Point pp ;
+                                pp.x = contours[i][m].x - r.tl().x;
+                                pp.y = contours[i][m].y - r.tl().y;
+                                wrt.push_back(pp); 
+                            }
+
+                            vector<Point> sob_point = apply_sobel(lapc, wrt, radius);
+                            for(int k = 0;k<sob_point.size();k++){
+                                circle(finalimg, Point(r.tl().x + segp[0].x + sob_point[k].x, r.tl().y + segp[0].y + sob_point[k].y), 2, CV_RGB(255,0,0), -1);
+                                //circle(segm2[0], Point(sob_point[k].x,sob_point[k].y), 2, Scalar(255), -1);
+                            }
+
+                        }
+
                     }
                 }
             }
@@ -332,25 +390,24 @@ void process_small(Mat dst, vector<Vec3b> colors,  set<int> index_arr, int area)
 int main(int, char** argv)
 {
     // Load the image
-    Mat temp = imread(argv[1]); 
+    temp = imread(argv[1]); 
+    cvtColor(temp, t, CV_BGR2GRAY);
     //Mat temp(400, 400, CV_8UC3, Scalar(0,0,0));
-   // resize(temp1, temp, Size(temp.rows, temp.cols));
+    // resize(temp1, temp, Size(temp.rows, temp.cols));
     //imwrite("test5.jpg",temp);  
-     src = temp.clone();
-     ptr = temp.clone(); 
-     finalimg=temp.clone();
-    // Check if everything was fine
+    src = temp.clone();
+    ptr = temp.clone(); 
+    finalimg=temp.clone();
+    
     if (!temp.data)   
         return -1;
  
     Mat yohoo; 
     
     imshow("Black Background Image", src);
-    // Create a kernel that we will use for accuting/sharpening our image4
+    
     bg(yohoo,temp);
     
-   /* Mat imgLaplacian;
-   */
     sharp_image(yohoo , src);
     imwrite("sharp.jpg", src);
     imshow("a" , src); 
@@ -375,27 +432,31 @@ int main(int, char** argv)
     }
 
     _watershed(src, markers, dst, size, index_arr,colors);
+    int app_area = calc_radius(dst, colors);
+    cout<<"the calculated area is "<<app_area<<endl;
+    waitKey(0);
     //get_small_segments(dst, colors, index_arr, contours);
-    process_small(dst,colors,index_arr,5000);
+    process_small(dst,colors,index_arr,temp.rows*temp.cols, app_area+500);
     
     int i = 0;
     
     while(!segm.empty())
     {
-        Mat dst1;
+        Mat dst1, dst2;
         cou++;
         imwrite("seg.jpg", segm[0]);
         index_arr.clear();
-         get_markers(segm[0], markers, s1, c, alpha, beta, s, size, 0);
+        get_markers(segm[0], markers, s1, c, alpha, beta, s, size, 0);
          //cout<<"hi\n";
-        _watershed(segm[0], markers, dst1, size, index_arr,colors);
+        _watershed(segm[0], markers, dst1, size, index_arr, colors);
         //cout<<"a\n";
         imwrite("win.jpg",dst1);
         waitKey(0);
-        process_small(dst1,colors,index_arr,contourArea(seg_contour[0]));
-       // cout<<"b\n";
+        process_small(dst1,colors,index_arr,contourArea(seg_contour[0]), app_area+500);
+        //cout<<"b\n";
         //cout<<segm.size()<<endl;
         segm.erase(segm.begin());
+        segm2.erase(segm2.begin());
         seg_contour.erase(seg_contour.begin());
         segp.erase(segp.begin());
     }
