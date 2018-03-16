@@ -79,7 +79,7 @@ int calc_radius(Mat dst, vector<Vec3b> colors){
 
 
 
-vector <Point> apply_sobel(Mat img, vector<Point> cont, int radius){
+vector<Point> apply_sobel(Mat img, vector<Point> cont, int radius){
 
 	
 
@@ -194,10 +194,10 @@ vector <Point> apply_sobel(Mat img, vector<Point> cont, int radius){
 
 	            if(count.size() > 0)
 	            {
-	                printf("%s\n","check2" );
+	               
 	                max_length = 0;
 	                int length = count[0];
-	                printf("%s %d\n", "length", length);
+	                //printf("%s %d\n", "length", length);
 
 	                for (int q = 0; q < count.size()-1; ++q)
 	                {
@@ -220,12 +220,13 @@ vector <Point> apply_sobel(Mat img, vector<Point> cont, int radius){
 	                    max_length = length;
 	                            
 	                        
-	                printf("%s %d\n","length", max_length );
-	                printf("%d %d\n",i,j );
+	                // printf("%s %d\n","length", max_length );
+	                // printf("%d %d\n",i,j );
 	            }
 	            
 	            if(max_length > 50)
 	            {
+	            	printf("%s %d %d\n","Cricle detected", i, j);
 	                v.push_back(Point(j,i));
 	                r.push_back(k);
 	                circle( img, Point(j, i), 1, Scalar(255), -1, 8, 0 );
@@ -235,8 +236,7 @@ vector <Point> apply_sobel(Mat img, vector<Point> cont, int radius){
             
         }
     }
-
-	
+   
     imwrite("laplace.jpg", img);
     return v;
 }
@@ -245,7 +245,6 @@ Mat conv_to_laplace(Mat img){
 
 	GaussianBlur( img, img, Size(3, 3), 2, 2 );
     Mat dst;
-
     Canny(img, dst, 20, 70, 3);
 
     dilate(dst, dst, Mat(), Point(-1, -1), 2);

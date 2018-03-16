@@ -58,7 +58,7 @@ void bg(Mat& img, Mat src)
     		cout<<hierarchy[pos][2]<<" "<<max<<endl;
     		drawContours(dst, contours, hierarchy[pos][2],Scalar(255), -1);
     		//drawContours(dst, contours, -1,Scalar(255), 1);
-    		imshow("yo",dst);
+    		//imshow("yo",dst);
     		for(int i=0;i<img.rows;i++)
     			for(int j=0;j<img.cols;j++)
     			{

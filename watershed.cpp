@@ -228,7 +228,7 @@ void process_small(Mat dst, vector<Vec3b> colors,  set<int> index_arr, int area,
                     
                     if(contourArea(contours[i]) > app_area )
                     {
-                        cout<<"a1\n";
+                        cout<<"inside if !cou\n";
                         seg_contour.push_back(contours[i]);
                         Mat markers(dst.rows, dst.cols, CV_8UC1, Scalar(0));
                         printf("%s %f %d \n","Area:", contourArea(contours[i]),cou );
@@ -270,13 +270,13 @@ void process_small(Mat dst, vector<Vec3b> colors,  set<int> index_arr, int area,
                         Rect r = boundingRect(Mat(contours[i]));
                         imgg = temp.clone();
                         rectangle( imgg,Point(r.tl().x, r.tl().y), Point(r.br().x, r.br().y), Scalar(0,0,255), 1, 8, 0 );
-                        imshow("sobel", imgg);
-                        waitKey(0);
+                        
+                        
                         Mat img_ROI = t(r);
                         cout<<"roi selected\n";
                         Mat lapc;
-                        lapc = conv_to_laplace(img_ROI);
-                        cout<<"hhhhhhhhhhhh\n";
+                            lapc = conv_to_laplace(img_ROI);
+                        cout<<"inside else !cou\n";
                         imshow("lapalce", lapc);
                         waitKey(0);
                         vector<Point> wrt; 
@@ -288,18 +288,23 @@ void process_small(Mat dst, vector<Vec3b> colors,  set<int> index_arr, int area,
                         }                 
                         //lapc = conv_to_lapalce(lapc);
                         vector<Point> sob_point = apply_sobel(lapc, wrt, radius);
+                       
                         for(int k = 0;k<sob_point.size();k++){
-                            circle(finalimg, Point(r.tl().x + sob_point[i].x, r.tl().y + sob_point[i].y), 2, CV_RGB(255,0,0), -1);
+                            circle(finalimg, Point(r.tl().x + sob_point[k].x, r.tl().y + sob_point[k].y), 2, CV_RGB(255,0,0), -1);
+                            circle(imgg, Point(r.tl().x + sob_point[k].x, r.tl().y + sob_point[k].y), 2, CV_RGB(255,50*k,0), -1);
+                            //printf("%s %d %d\n","k", sob_point[k].x, sob_point[k].y );
                         }
+                        imshow("sobel", imgg);
+                        waitKey(0);
 
                     }   
                 }
 
                 else
                 {
-                    bool ans1 = (matchShapes(contours[i],seg_contour[0],CV_CONTOURS_MATCH_I1,0) != 0);
+                    bool ans1 = (matchShapes(contours[i],seg_contour[0],CV_CONTOURS_MATCH_I1,0) > 1e-2);
                     //cout<<ans1<<endl;
-                    if(contourArea(contours[i]) > app_area && ans1)
+                    if((contourArea(contours[i]) > app_area) && ans1)
                     {
                         //cout<<"a2\n";
                         imgg = temp.clone();
@@ -368,10 +373,15 @@ void process_small(Mat dst, vector<Vec3b> colors,  set<int> index_arr, int area,
                             }
 
                             vector<Point> sob_point = apply_sobel(lapc, wrt, radius);
+                            printf("%s %d\n","k", sob_point.size());
                             for(int k = 0;k<sob_point.size();k++){
                                 circle(finalimg, Point(r.tl().x + segp[0].x + sob_point[k].x, r.tl().y + segp[0].y + sob_point[k].y), 2, CV_RGB(255,0,0), -1);
+                                circle(imgg, Point(r.tl().x + segp[0].x + sob_point[k].x, r.tl().y + segp[0].y + sob_point[k].y), 2, CV_RGB(255,20*k,0), -1);
+                                printf("%s %d %d\n","k",r.tl().x + sob_point[k].x, r.tl().y + sob_point[k].y);
                                 //circle(segm2[0], Point(sob_point[k].x,sob_point[k].y), 2, Scalar(255), -1);
                             }
+                            imshow("sobel", imgg);
+                            waitKey(0);
 
                         }
 
@@ -447,7 +457,7 @@ int main(int, char** argv)
     _watershed(src, markers, dst, size, index_arr,colors);
     int app_area = calc_radius(dst, colors);
     cout<<"the calculated area is "<<app_area<<endl;
-    waitKey(0);
+    waitKey(10);
     //get_small_segments(dst, colors, index_arr, contours);
     process_small(dst,colors,index_arr,temp.rows*temp.cols, app_area+500);
     
@@ -465,7 +475,7 @@ int main(int, char** argv)
         //cout<<"a\n";
         imwrite("win.jpg",dst1);
         waitKey(0);
-        process_small(dst1,colors,index_arr,contourArea(seg_contour[0]), app_area+500);
+        process_small(dst1,colors,index_arr,contourArea(seg_contour[0]), app_area);
         //cout<<"b\n";
         //cout<<segm.size()<<endl;
         segm.erase(segm.begin());
