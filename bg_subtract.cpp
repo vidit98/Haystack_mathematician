@@ -8,7 +8,7 @@
 using namespace cv;
 using namespace std;
 
-void bg(Mat& img, Mat src)
+void bg(Mat& img, Mat src, vector<Point >& mainc)
 {
 	int max=0,pos=0;
 	img=src.clone();
@@ -41,12 +41,16 @@ void bg(Mat& img, Mat src)
     adaptiveThreshold(bw,  bw2, 255, ADAPTIVE_THRESH_GAUSSIAN_C, CV_THRESH_BINARY_INV, 2*s1 + 1, c);	
 			Mat img1;
 			Mat element = getStructuringElement( MORPH_ELLIPSE,Size( 3,3 ),Point( 1,1 ) );
+			dilate(bw2,bw2,element);
+			dilate(bw2,bw2,element);
+			dilate(bw2,bw2,element);
+			dilate(bw2,img1,element);
 			//erode( bw2, bw2, element );
 			//erode( bw2, img1, element );
 			//imshow("r",img1);
 			vector<vector<Point> > contours;
 			vector<Vec4i> hierarchy;
-    		findContours(bw2, contours,hierarchy, CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE);
+    		findContours(img1, contours,hierarchy, CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE);
     		for(int j=0;j<contours.size();j++)
     		{
     			if(contourArea(contours[j])>max )
@@ -55,8 +59,17 @@ void bg(Mat& img, Mat src)
     				pos=j;
     			}
     		}
-    		cout<<hierarchy[pos][2]<<" "<<max<<endl;
-    		drawContours(dst, contours, hierarchy[pos][2],Scalar(255), -1);
+    		cout<<contourArea(contours[hierarchy[pos][2]])<<" "<<max<<endl;
+    		drawContours(dst, contours, pos,Scalar(255), -1);
+    		mainc=contours[pos];
+    		erode( dst, dst, element );
+    		erode( dst, dst, element );
+    		erode( dst, dst, element );
+    		erode( dst, dst, element );
+    		erode( dst, dst, element );
+    		erode( dst, dst, element );
+    		erode( dst, dst, element );
+    		erode( dst, dst, element );
     		//drawContours(dst, contours, -1,Scalar(255), 1);
     		//imshow("yo",dst);
     		for(int i=0;i<img.rows;i++)
@@ -67,5 +80,7 @@ void bg(Mat& img, Mat src)
     					img.at<Vec3b>(i,j)={220,220,220};
     				}
     			}
-	
+			imshow("win",img);
+			imwrite("bgsub.jpg",img);
+			waitKey(0);
 }

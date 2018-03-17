@@ -12,7 +12,7 @@ using namespace std;
 static const int DIST_SHIFT = 16;
 static const int INIT_DIST0 = (INT_MAX >> 2);
 #define  CV_FLT_TO_FIX(x,n)  cvRound((x)*(1<<(n)))
-#define GRADIENT(x,y)  abs((x - y)*(1<<10))
+#define GRADIENT(x,y)  abs((x - y)*(1<<12))
 namespace trans
 {
 static void
@@ -216,9 +216,9 @@ static void distanceTransform_5x5( const Mat& _src, const Mat& _gray, Mat& _temp
                     tmpg[j] = tmpg[j+c] + GRADIENT(g[j] , g[j + a]);
                
             }
-            if (tmpg[j]*scale > 256)
+            if (tmpg[j]*scale > 255)
             {
-                d[j] = (float)((t0 * scale + 255));
+                //d[j] = (float)((t0 * scale + 255));
             }
             else
             {

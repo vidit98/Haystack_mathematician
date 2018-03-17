@@ -27,7 +27,7 @@ int calc_radius(Mat dst, vector<Vec3b> colors){
            
         vector<vector<Point> > contours2;
         findContours(frame_thresh, contours2, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
-        cout<<contours2.size()<<endl;
+       // cout<<contours2.size()<<endl;
             
         for(int j=0; j<contours2.size(); j++){
         	if(contourArea(contours2[j])>150){
@@ -64,7 +64,7 @@ int calc_radius(Mat dst, vector<Vec3b> colors){
     int max_ar = 0;
     int ind = 0;
     for(int i=0;i<area.size();i++){
-        cout<<area[i].x<<" "<<area[i].y<<endl;
+       // cout<<area[i].x<<" "<<area[i].y<<endl;
         if(area[i].y>=max_ar){
             max_ar = area[i].y;
             ind = i;
@@ -224,12 +224,12 @@ vector<Point> apply_sobel(Mat img, vector<Point> cont, int radius){
 	                // printf("%d %d\n",i,j );
 	            }
 	            
-	            if(max_length > 50)
+	            if(max_length > 60)
 	            {
-	            	printf("%s %d %d\n","Cricle detected", i, j);
+	            	//printf("%s %d %d\n","Cricle detected", i, j);
 	                v.push_back(Point(j,i));
 	                r.push_back(k);
-	                circle( img, Point(j, i), 1, Scalar(255), -1, 8, 0 );
+	                //circle( img, Point(j, i), 1, Scalar(255), -1, 8, 0 );
 	            }
 
             }   
