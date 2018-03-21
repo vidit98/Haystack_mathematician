@@ -11,7 +11,7 @@
 #include "cluster.cpp"
 #define SD_X 6
 #define SD_Y 6
-#define AREA 0.05
+#define AREA 0..08
 
 using namespace cv;
 using namespace std;
@@ -74,7 +74,7 @@ void get_markers(Mat img, Mat& output, int s1, int c, int alpha, int beta, int s
     imwrite("bn1.jpg",bw1);
     bilateralFilter(bw1, bw, 2*alpha + 1, beta, 50 );
     
-    //imshow("Binary Image1", bw);
+    //imshow("Binary Image1", bw)
     imwrite("a.jpg" , bw);
     // threshold(bw, bw2, 40, 255, CV_THRESH_BINARY_INV| CV_THRESH_OTSU);
     adaptiveThreshold(bw, bw2, 255, ADAPTIVE_THRESH_GAUSSIAN_C, CV_THRESH_BINARY_INV, 2*s1 + 1, c);
@@ -93,7 +93,7 @@ void get_markers(Mat img, Mat& output, int s1, int c, int alpha, int beta, int s
     
     imwrite("Distancet.jpg", dist);
     // Threshold to obtain the peaks
-    // This will be the markers for the foreground objects
+    //This will be the markers for the foreground objects
     threshold(dist, dist, .4, 1., CV_THRESH_BINARY);
     // Dilate a bit the dist image
     Mat kernel1 = Mat::ones(3, 3, CV_8UC1);
@@ -102,8 +102,10 @@ void get_markers(Mat img, Mat& output, int s1, int c, int alpha, int beta, int s
     //imshow("Peaks", dist);
     imwrite("Peaks.jpg", dist);
    
-    Mat dist_8u;
+    Mat dist_8u, wt;
     dist.convertTo(dist_8u, CV_8U);
+    dist.convertTo(wt, CV_8U,255);
+    imwrite("Distancet.jpg",wt);
     // Find total markers
     vector<vector<Point> > contours;
     findContours(dist_8u, contours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
@@ -276,8 +278,8 @@ void process_small(Mat dst, vector<Vec3b> colors,  set<int> index_arr, int area,
                         imgg = temp.clone();
                        
                         rectangle( imgg,Point(r.tl().x, r.tl().y), Point(r.br().x, r.br().y), Scalar(0,0,255), 1, 8, 0 );
-                         //imshow("sobel", imgg);
-                        //waitKey(0);
+                         imshow("sobel", imgg);
+                        waitKey(0);
                         
                         Mat img_ROI = t(r);
                         Mat lapc;
@@ -426,8 +428,8 @@ void process_small(Mat dst, vector<Vec3b> colors,  set<int> index_arr, int area,
                             imgg = temp.clone();
                             Rect r = boundingRect(Mat(contours[i]));
                             rectangle( imgg,Point(r.tl().x+segp[0].x, r.tl().y + segp[0].y), Point(r.br().x+segp[0].x, r.br().y + segp[0].y), Scalar(0,0,255), 1, 8, 0 );
-                            //imshow("sobel", imgg);
-                            //waitKey(0);
+                            imshow("sobel", imgg);
+                            waitKey(0);
                             Mat img_ROI = segm2[0](r);
                             //cout<<img_ROI.rows<<" "<<img_ROI.cols<<endl;
                             Mat lapc;
@@ -467,8 +469,8 @@ void process_small(Mat dst, vector<Vec3b> colors,  set<int> index_arr, int area,
                                 //circle(segm2[0], Point(sob_point[k].x,sob_point[k].y), 2, Scalar(255), -1);
                             }
                             imwrite("finalimg.jpg",finalimg);
-                            //imshow("sobel", imgg);
-                            //waitKey(0);
+                            imshow("sobel", imgg);
+                            waitKey(0);
 
                     }
                     else
@@ -508,8 +510,8 @@ void process_small(Mat dst, vector<Vec3b> colors,  set<int> index_arr, int area,
                             imgg = temp.clone();
                             Rect r = boundingRect(Mat(contours[i]));
                             rectangle( imgg,Point(r.tl().x+segp[0].x, r.tl().y + segp[0].y), Point(r.br().x+segp[0].x, r.br().y + segp[0].y), Scalar(0,0,255), 1, 8, 0 );
-                           // imshow("sobel", imgg);
-                            //waitKey(0);
+                            imshow("sobel", imgg);
+                            waitKey(0);
                             Mat img_ROI = segm2[0](r);
                             //cout<<img_ROI.rows<<" "<<img_ROI.cols<<endl;
                             Mat lapc;
@@ -550,8 +552,8 @@ void process_small(Mat dst, vector<Vec3b> colors,  set<int> index_arr, int area,
                             }
                             imwrite("finalimg.jpg",finalimg);
                             imwrite("final_count.jpg", imgg1);
-                          // imshow("sobel", imgg);
-                            //waitKey(0);
+                          imshow("sobel", imgg);
+                            waitKey(0);
 
                         }
 
@@ -584,7 +586,6 @@ int main(int, char** argv)
 {
     // Load the image
     Mat temp1 = imread(argv[1]); 
-    
     
     Mat extra1(400, 300, CV_8UC3, Scalar(0,0,0));
     temp=extra1.clone();
@@ -636,7 +637,7 @@ sharp_image(yohoo , src);
     cout<<"the calculated area is "<<app_area<<endl;
     //waitKey(10);
     //get_small_segments(dst, colors, index_arr, contours);
-    process_small(dst,colors,index_arr,temp.rows*temp.cols, app_area+500);
+    process_small(dst,colors,index_arr,temp.rows*temp.cols, app_area+300);
     
     int i = 0;
     
@@ -652,7 +653,7 @@ sharp_image(yohoo , src);
         //cout<<"a\n";
         imwrite("win.jpg",dst1);
         //waitKey(0);
-        process_small(dst1,colors,index_arr,contourArea(seg_contour[0]), app_area+500);
+        process_small(dst1,colors,index_arr,contourArea(seg_contour[0]), app_area+300);
         //cout<<"b\n";
         //cout<<segm.size()<<endl;
         segm.erase(segm.begin());

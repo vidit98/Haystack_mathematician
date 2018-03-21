@@ -86,7 +86,7 @@ vector<Point> apply_sobel(Mat img, vector<Point> cont, int radius){
 	int rows = img.rows;
     int cols = img.cols;
     int max_radius = radius + 3;
-    int min_radius = radius;
+    int min_radius = radius-3;
 
     vector<Point> v;
     vector<int> r; 
